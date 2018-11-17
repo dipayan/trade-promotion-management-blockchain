@@ -1,17 +1,22 @@
 export const customers = [
     {
-        id : "0x3c389d5Fa71Da25b07F3cFefA86779FE0F522437",
-        name: "Big Baazar"
+        id : '0xd9FB5FB778b83C2f06D8Fc6169AcddC3D192Abd9',
+        name: "Big Baazar",
+        tp: 1000,
     },
     {
-        id : "0xd9FB5FB778b83C2f06D8Fc6169AcddC3D192Abd9",
-        name: "Spencer's"
+        id : '0x386158E1B11617741e9Ad6151fE4d4967c52d950',
+        name: "Spencer's",
+        tp: 500,
     },
     {
-        id : "0x386158E1B11617741e9Ad6151fE4d4967c52d950",
-        name: "Moore"
+        id : '0x98AA864Ba3f705CcA77149eA4abE5dF640BAe4f6', 
+        name: "Moore",
+        tp: 800,
     },        
 ]
+
+export const rootAccount = '0x3c389d5Fa71Da25b07F3cFefA86779FE0F522437'
 
 export const promotions = [
     {

@@ -5,7 +5,7 @@ import TruffleContract from 'truffle-contract'
 import TradePromotion from '../../build/contracts/TradePromotion.json'
 import MainLayout from './MainLayout'
 import 'bootstrap/dist/css/bootstrap.css'
-import { customers, promotions } from './database'
+import { customers, promotions, rootAccount } from './database'
 
 class App extends React.Component {
   constructor(props) {
@@ -35,6 +35,7 @@ class App extends React.Component {
     this.applyPromoFn = this.applyPromoFn.bind(this)
     this.watchEvents = this.watchEvents.bind(this)
     this.hexToString = this.hexToString.bind(this)
+    this.initalize = this.initalize.bind(this)
   }
 
 
@@ -42,33 +43,24 @@ class App extends React.Component {
     // TODO: Refactor with promise chain
     this.web3.eth.getCoinbase((err, account) => {
       this.setState({ account })
-      this.setState({ accountName: customers.filter(customer => this.hexToString(customer.id) == this.hexToString(account)).map(customer => customer.name) })
       this.tradePromotion.deployed().then((tradePromotionInstance) => {
         this.tradePromotionInstance = tradePromotionInstance
         this.watchEvents()
-        this.tradePromotionInstance.trustPoints().then((_trustPoints) => {
-          this.setState({ accountTrustPoints: _trustPoints.toNumber() })
-  
-          this.tradePromotionInstance.getAppliedPromos().then((_appliedPromotions) => {
-            let temp = _appliedPromotions.map(key => key.toNumber())
-            this.setState({ appliedPromotions: promotions.filter( promotion => temp.includes(promotion.id) )})
-            console.log( this.state.appliedPromotions)
-          })
+            this.tradePromotionInstance.getAccountName(account).then(accountName => this.setState({accountName}))
+            this.tradePromotionInstance.getAccountTrustPoints(account).then(accountTrustPoints => this.setState({accountTrustPoints : accountTrustPoints.toNumber()}))
+            this.tradePromotionInstance.getAccountPromoHistory(account).then(appliedPromotions => this.setState({appliedPromotions : promotions.filter(promotion => appliedPromotions.map(value => value.toNumber()).includes(promotion.id) > 0)}) )
+            
+            let _availablePromotions = []
 
-          let _availablePromotions = []
-
-          promotions.forEach( promotion => {
-            this.tradePromotionInstance.isPromoAvailable.call(promotion.tpCriteria).then(result => {
-              if (!result) _availablePromotions.push(promotion)
-              this.setState({ availablePromotions: _availablePromotions})
+            promotions.forEach( promotion => {
+              this.tradePromotionInstance.isPromoAvailable.call(account,promotion.tpCriteria, promotion.id).then(result => {
+                if (result) _availablePromotions.push(promotion)
+                this.setState({ availablePromotions: _availablePromotions})
+              })
             })
-          })
-
-          this.setState({ availablePromotions: _availablePromotions , loading : false})
-
-          })
-        })
+          this.setState({ loading : false })
       })
+    })
 
   }
   hexToString(hex) {
@@ -79,6 +71,11 @@ class App extends React.Component {
     return string;
   }
 
+
+  initalize() {
+    this.setState({processing: true})
+    customers.forEach(customer => this.tradePromotionInstance.addAccount(new String(customer.id).valueOf(), customer.name, customer.tp, { from: this.state.account }).then(result => console.log(result)))
+  }
 
   watchEvents() {
     // TODO: trigger event when promo is applied not when component renders
@@ -92,13 +89,14 @@ class App extends React.Component {
 
   applyPromoFn(promoId, tpCost,  tpCriteria) {
     this.setState({ processing: true })
-    this.tradePromotionInstance.applyPromo(promoId, tpCost, tpCriteria, { from: this.state.account }).then((result) => result )
+    this.tradePromotionInstance.applyPromo(this.state.account, promoId , tpCriteria, tpCost, { from: this.state.account }).then((result) =>  window.location.reload() )
   }
 
   render() {
     return (
       <div>
-        {this.state.loading || this.state.voting
+        { this.hexToString(this.state.account) === this.hexToString(rootAccount) ? <button type='submit' onClick={this.initalize} className='btn btn-primary'>Initialize</button> 
+        : this.state.loading || this.state.processing
           ? <p className='text-center'>Loading...</p>
           : <MainLayout
             account={this.state.account}

@@ -1,41 +1,62 @@
-pragma solidity 0.4.24;
+
+pragma solidity ^0.4.24;
 
 contract TradePromotion {
 
-    uint public trustPoints;
-    uint private txnPointCost;
-    uint[] private appliedPromotions;
+    struct Account {
+        string name;
+        uint256 trustPoints;
+        uint256[] appliedPromotions;
+    }
+
+    mapping (address => Account) private accounts;
 
     event promotionTxnEvent (
         uint indexed _promoId
     );
 
-    constructor () public {
-        trustPoints = 500;
+    modifier onlyOwner(address _addr) {
+        require(msg.sender == _addr, "You are not authorized");
+        _;
     }
 
-    function isPromoAvailable(uint _tpCriteria) external view returns (bool) {
-        return trustPoints > _tpCriteria ;
+    function addAccount(address _addr, string _name, uint256 _tp) public {
+        accounts[_addr].name = _name;
+        accounts[_addr].trustPoints = _tp;
+        emit promotionTxnEvent(0);
     }
 
-    function getAppliedPromos() external view returns (uint[]) {
-        return appliedPromotions;
+    function getAccountName(address _addr) public  view returns (string){
+        return accounts[_addr].name;
     }
 
-    function applyPromo (uint _promoId, uint _tpCost, uint _tpCriteria ) public {
-        //require that the same promo does not gets added twice
-        for (uint i = 0; i < appliedPromotions.length; i++) {
-            require(appliedPromotions[i] != _promoId, "Same promo cant be applied twice");
+    function getAccountTrustPoints(address _addr) public  view returns (uint256){
+        return accounts[_addr].trustPoints;
+    }
+
+    function getAccountPromoHistory(address _addr) public  view returns (uint256[]){
+        return accounts[_addr].appliedPromotions;
+    }
+
+    function isPromoAvailable (address _addr, uint256 _tpCriteria, uint256 _promoId ) public  view returns (bool) {
+
+        for (uint i = 0; i < accounts[_addr].appliedPromotions.length; i++) {
+            if (accounts[_addr].appliedPromotions[i] == _promoId) return false ;
         }
+        return accounts[_addr].trustPoints > _tpCriteria && _promoId > 0;
+    }
 
-        require(_promoId > 0 && _tpCriteria < trustPoints, "Your trust point is not sufficient for this promo");
+    function applyPromo (address _addr, uint256 _promoId, uint256 _tpCriteria, uint256 _tpCost ) public {
+        
+        require(isPromoAvailable(_addr, _tpCriteria, _promoId),"Promo cannot be applied as it fails to match criteria");
 
-        appliedPromotions.push(_promoId);
+        accounts[_addr].appliedPromotions.push(_promoId);
 
-        trustPoints = trustPoints - _tpCost;
+        accounts[_addr].trustPoints = accounts[_addr].trustPoints - _tpCost;
 
         // trigger event
         emit promotionTxnEvent(_promoId);
     }
-    
+
+
 }

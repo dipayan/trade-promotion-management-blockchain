@@ -22,11 +22,11 @@ class MainLayout extends React.Component {
         <hr />
       </div>
       <div className="row">
+      <div className="col-sm-6 text-center" style={{marginTop: '5em'}}>  
+            <PromoCampaign applyPromoFn={this.props.applyPromoFn} availablePromotions={this.props.availablePromotions} />
+        </div>      
         <div className="col-sm-6 text-center" style={{marginTop: '5em'}}>   
           <PromoHistory appliedPromotions={this.props.appliedPromotions}  />
-        </div>
-          <div className="col-sm-6 text-center" style={{marginTop: '5em'}}>  
-            <PromoCampaign applyPromoFn={this.props.applyPromoFn} availablePromotions={this.props.availablePromotions} />
         </div>
       </div>
       </div>
